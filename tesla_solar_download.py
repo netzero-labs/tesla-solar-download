@@ -17,12 +17,12 @@ limitations under the License.
 import argparse
 import csv
 import os
-import time
-from datetime import datetime, timedelta
-
 import pytz
 import teslapy
+import time
+from datetime import datetime, timedelta
 from dateutil.parser import parse
+from retry import retry
 
 
 def _get_csv_name(date, site_id):
@@ -51,9 +51,10 @@ def _write_csv(timeseries, date, site_id):
             writer.writerow(ts)
 
 
+@retry(tries=2, delay=5)
 def _download_day(tesla, site_id, timezone, date):
-    start_date = date.replace(hour=0, minute=0, second=0).isoformat()
-    end_date = date.replace(hour=23, minute=59, second=59).isoformat()
+    start_date = pytz.timezone(timezone).localize(date.replace(hour=0, minute=0, second=0, tzinfo=None)).isoformat()
+    end_date = pytz.timezone(timezone).localize(date.replace(hour=23, minute=59, second=59, tzinfo=None)).isoformat()
     response = tesla.api(
         'CALENDAR_HISTORY_DATA',
         path_vars={'site_id': site_id},
@@ -73,14 +74,15 @@ def _download_data(tesla, site_id, debug=False):
     installation_date = parse(site_config['installation_date'])
     timezone = site_config['installation_time_zone']
 
-    date = pytz.timezone(timezone).localize(datetime.now()).replace(microsecond=0)
+    date = pytz.timezone(timezone).localize(
+            datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
     if debug:
         print(f'Timezone: {timezone}')
         print(f'Start date: {date}')
 
     while date > installation_date:
         if not os.path.exists(_get_csv_name(date, site_id)):
-            print(date.replace(hour=0, minute=0, second=0).isoformat())
+            print(date.isoformat())
             _download_day(tesla, site_id, timezone, date)
             time.sleep(3)
         date -= timedelta(days=1)
