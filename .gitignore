@@ -1,3 +1,5 @@
 cache.json
 download
 venv
+var
+.DS_Store

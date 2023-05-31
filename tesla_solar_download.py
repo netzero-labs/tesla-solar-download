@@ -68,18 +68,25 @@ def _download_day(tesla, site_id, timezone, date):
     _write_csv(response['time_series'], date, site_id)
 
 
-def _download_data(tesla, site_id):
+def _download_data(tesla, site_id, debug=False):
     site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
     installation_date = parse(site_config['installation_date'])
     timezone = site_config['installation_time_zone']
 
-    date = datetime.now(pytz.timezone(timezone)).replace(microsecond=0)
+    date = pytz.timezone(timezone).localize(datetime.now()).replace(microsecond=0)
+    if debug:
+        print(f'Timezone: {timezone}')
+        print(f'Start date: {date}')
+
     while date > installation_date:
         if not os.path.exists(_get_csv_name(date, site_id)):
-            print(date)
+            print(date.replace(hour=0, minute=0, second=0).isoformat())
             _download_day(tesla, site_id, timezone, date)
             time.sleep(3)
         date -= timedelta(days=1)
+        # Re-localize the date based on the timezone.  This is important because we maybe have
+        # crossed a daylight saving change so the timezone offset will be different.
+        date = pytz.timezone(timezone).localize(date.replace(tzinfo=None))
 
 
 def main():
@@ -88,6 +95,9 @@ def main():
     )
     parser.add_argument(
         '--email', type=str, required=True, help='Tesla account email address'
+    )
+    parser.add_argument(
+        '--debug', action='store_true', help='Print debug info'
     )
     args = parser.parse_args()
 
@@ -107,8 +117,8 @@ def main():
         resource_type = product.get('resource_type')
         if resource_type in ('battery', 'solar'):
             site_id = product['energy_site_id']
-            print(f'Downloading data for {resource_type} site {site_id}')
-            _download_data(tesla, product['energy_site_id'])
+            print(f'Downloading data for {resource_type} site ***{str(site_id)[-4:]}')
+            _download_data(tesla, product['energy_site_id'], debug=args.debug)
 
 
 if __name__ == '__main__':
