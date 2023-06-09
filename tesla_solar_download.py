@@ -17,24 +17,26 @@ limitations under the License.
 import argparse
 import csv
 import os
-import pytz
-import teslapy
 import time
 from datetime import datetime, timedelta
+
+import pytz
+import teslapy
 from dateutil.parser import parse
 from retry import retry
 
 
-def _get_csv_name(date, site_id):
+def _get_csv_name(date, site_id, partial_day=False):
     str_date = date.strftime('%Y-%m-%d')
-    return f'download/{site_id}/{str_date}.csv'
+    suffix = '.partial.csv' if partial_day else '.csv'
+    return f'download/{site_id}/{str_date}{suffix}'
 
 
-def _write_csv(timeseries, date, site_id):
+def _write_csv(timeseries, date, site_id, partial_day=False):
     if not timeseries:
         raise ValueError(f'No timeseries for {date}')
 
-    csv_filename = _get_csv_name(date, site_id)
+    csv_filename = _get_csv_name(date, site_id, partial_day=partial_day)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
     fieldnames = list(timeseries[0].keys()) + ['load_power']
     with open(csv_filename, 'w') as csv_file:
@@ -52,9 +54,17 @@ def _write_csv(timeseries, date, site_id):
 
 
 @retry(tries=2, delay=5)
-def _download_day(tesla, site_id, timezone, date):
-    start_date = pytz.timezone(timezone).localize(date.replace(hour=0, minute=0, second=0, tzinfo=None)).isoformat()
-    end_date = pytz.timezone(timezone).localize(date.replace(hour=23, minute=59, second=59, tzinfo=None)).isoformat()
+def _download_day(tesla, site_id, timezone, date, partial_day=True):
+    start_date = (
+        pytz.timezone(timezone)
+        .localize(date.replace(hour=0, minute=0, second=0, tzinfo=None))
+        .isoformat()
+    )
+    end_date = (
+        pytz.timezone(timezone)
+        .localize(date.replace(hour=23, minute=59, second=59, tzinfo=None))
+        .isoformat()
+    )
     response = tesla.api(
         'CALENDAR_HISTORY_DATA',
         path_vars={'site_id': site_id},
@@ -66,7 +76,7 @@ def _download_day(tesla, site_id, timezone, date):
         fill_telemetry=0,
     )['response']
 
-    _write_csv(response['time_series'], date, site_id)
+    _write_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
 def _download_data(tesla, site_id, debug=False):
@@ -75,20 +85,32 @@ def _download_data(tesla, site_id, debug=False):
     timezone = site_config['installation_time_zone']
 
     date = pytz.timezone(timezone).localize(
-            datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    )
     if debug:
         print(f'Timezone: {timezone}')
         print(f'Start date: {date}')
 
+    # The first day (today) will be partial.
+    partial_day = True
+
     while date > installation_date:
-        if not os.path.exists(_get_csv_name(date, site_id)):
+        if partial_day or not os.path.exists(_get_csv_name(date, site_id)):
             print(date.isoformat())
-            _download_day(tesla, site_id, timezone, date)
+            _download_day(tesla, site_id, timezone, date, partial_day=partial_day)
             time.sleep(3)
         date -= timedelta(days=1)
+        partial_day = False
         # Re-localize the date based on the timezone.  This is important because we maybe have
         # crossed a daylight saving change so the timezone offset will be different.
         date = pytz.timezone(timezone).localize(date.replace(tzinfo=None))
+
+
+def _delete_partial_files(site_id):
+    dir = os.path.join('download', str(site_id))
+    for fname in os.listdir(dir):
+        if '.partial.csv' in fname:
+            os.remove(os.path.join(dir, fname))
 
 
 def main():
@@ -98,9 +120,7 @@ def main():
     parser.add_argument(
         '--email', type=str, required=True, help='Tesla account email address'
     )
-    parser.add_argument(
-        '--debug', action='store_true', help='Print debug info'
-    )
+    parser.add_argument('--debug', action='store_true', help='Print debug info')
     args = parser.parse_args()
 
     tesla = teslapy.Tesla(args.email, retry=2, timeout=10)
@@ -120,7 +140,8 @@ def main():
         if resource_type in ('battery', 'solar'):
             site_id = product['energy_site_id']
             print(f'Downloading data for {resource_type} site ***{str(site_id)[-4:]}')
-            _download_data(tesla, product['energy_site_id'], debug=args.debug)
+            _delete_partial_files(site_id)
+            _download_data(tesla, site_id, debug=args.debug)
 
 
 if __name__ == '__main__':
