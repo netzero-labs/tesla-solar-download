@@ -26,17 +26,108 @@ from dateutil.parser import parse
 from retry import retry
 
 
-def _get_csv_name(date, site_id, partial_day=False):
+def _get_energy_csv_name(date, site_id, partial_month=False):
+    str_date = date.strftime('%Y-%m')
+    suffix = '.partial.csv' if partial_month else '.csv'
+    return f'download/{site_id}/energy/{str_date}{suffix}'
+
+
+def _write_energy_csv(timeseries, date, site_id, partial_month=False):
+    if not timeseries:
+        raise ValueError('No timeseries')
+
+    csv_filename = _get_energy_csv_name(date, site_id, partial_month=partial_month)
+    os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
+    fieldnames = list(timeseries[0].keys())
+    with open(csv_filename, 'w') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for ts in timeseries:
+            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+            writer.writerow(ts)
+
+
+@retry(tries=2, delay=5)
+def _download_energy_month(
+    tesla, site_id, timezone, start_date, end_date, partial_month=False
+):
+    response = tesla.api(
+        'CALENDAR_HISTORY_DATA',
+        path_vars={'site_id': site_id},
+        kind='energy',
+        period='month',
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+        time_zone=timezone,
+        fill_telemetry=0,
+    )['response']
+
+    _write_energy_csv(
+        response['time_series'], start_date, site_id, partial_month=partial_month
+    )
+
+
+def _download_energy_data(tesla, site_id, debug=False):
+    site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
+    installation_date = parse(site_config['installation_date'])
+    timezone = site_config['installation_time_zone']
+
+    now = datetime.now(pytz.timezone(timezone)).replace(microsecond=0)
+    start_date = now.replace(hour=0, minute=0, second=0)
+    end_date = now.replace(hour=23, minute=59, second=59)
+
+    # Beginning of the month.
+    start_date = start_date - timedelta(days=start_date.day - 1)
+    if debug:
+        print(f'Timezone: {timezone}')
+        print(f'Start date: {start_date}')
+
+    # The latest month will be partial.
+    partial_month = True
+
+    while end_date > installation_date:
+        csv_name = _get_energy_csv_name(start_date, site_id)
+        if partial_month or not os.path.exists(
+            _get_energy_csv_name(start_date, site_id)
+        ):
+            print(f'  {os.path.basename(csv_name)}')
+            _download_energy_month(
+                tesla,
+                site_id,
+                timezone,
+                start_date,
+                end_date,
+                partial_month=partial_month,
+            )
+            time.sleep(1)
+        partial_month = False
+        end_date = start_date - timedelta(seconds=1)
+        start_date = end_date.replace(hour=0, minute=0, second=0) - timedelta(
+            days=end_date.day - 1
+        )
+        start_date = pytz.timezone(timezone).localize(start_date.replace(tzinfo=None))
+
+
+def _delete_partial_energy_files(site_id):
+    dir = os.path.join('download', str(site_id), 'energy')
+    if not os.path.exists(dir):
+        return
+    for fname in os.listdir(dir):
+        if '.partial.csv' in fname:
+            os.remove(os.path.join(dir, fname))
+
+
+def _get_power_csv_name(date, site_id, partial_day=False):
     str_date = date.strftime('%Y-%m-%d')
     suffix = '.partial.csv' if partial_day else '.csv'
-    return f'download/{site_id}/{str_date}{suffix}'
+    return f'download/{site_id}/power/{str_date}{suffix}'
 
 
-def _write_csv(timeseries, date, site_id, partial_day=False):
+def _write_power_csv(timeseries, date, site_id, partial_day=False):
     if not timeseries:
         raise ValueError(f'No timeseries for {date}')
 
-    csv_filename = _get_csv_name(date, site_id, partial_day=partial_day)
+    csv_filename = _get_power_csv_name(date, site_id, partial_day=partial_day)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
     fieldnames = list(timeseries[0].keys()) + ['load_power']
     with open(csv_filename, 'w') as csv_file:
@@ -54,7 +145,7 @@ def _write_csv(timeseries, date, site_id, partial_day=False):
 
 
 @retry(tries=2, delay=5)
-def _download_day(tesla, site_id, timezone, date, partial_day=True):
+def _download_power_day(tesla, site_id, timezone, date, partial_day=True):
     start_date = (
         pytz.timezone(timezone)
         .localize(date.replace(hour=0, minute=0, second=0, tzinfo=None))
@@ -76,16 +167,16 @@ def _download_day(tesla, site_id, timezone, date, partial_day=True):
         fill_telemetry=0,
     )['response']
 
-    _write_csv(response['time_series'], date, site_id, partial_day=partial_day)
+    _write_power_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
-def _download_data(tesla, site_id, debug=False):
+def _download_power_data(tesla, site_id, debug=False):
     site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
     installation_date = parse(site_config['installation_date'])
     timezone = site_config['installation_time_zone']
 
-    date = pytz.timezone(timezone).localize(
-        datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    date = datetime.now(pytz.timezone(timezone)).replace(
+        hour=0, minute=0, second=0, microsecond=0
     )
     if debug:
         print(f'Timezone: {timezone}')
@@ -95,9 +186,10 @@ def _download_data(tesla, site_id, debug=False):
     partial_day = True
 
     while date > installation_date:
-        if partial_day or not os.path.exists(_get_csv_name(date, site_id)):
-            print(date.isoformat())
-            _download_day(tesla, site_id, timezone, date, partial_day=partial_day)
+        csv_name = _get_power_csv_name(date, site_id)
+        if partial_day or not os.path.exists(csv_name):
+            print(f'  {os.path.basename(csv_name)}')
+            _download_power_day(tesla, site_id, timezone, date, partial_day=partial_day)
             time.sleep(1)
         date -= timedelta(days=1)
         partial_day = False
@@ -106,80 +198,8 @@ def _download_data(tesla, site_id, debug=False):
         date = pytz.timezone(timezone).localize(date.replace(tzinfo=None))
 
 
-def _get_energy_csv_name(site_id):
-    return f'download/{site_id}/energy.csv'
-
-
-def _write_energy_csv(timeseries, site_id):
-    if not timeseries:
-        raise ValueError('No timeseries')
-
-    csv_filename = _get_energy_csv_name(site_id)
-    os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
-    file_exists = os.path.exists(csv_filename)
-    fieldnames = list(timeseries[0].keys())
-    with open(csv_filename, 'a') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()
-        for ts in timeseries:
-            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
-            writer.writerow(ts)
-
-
-@retry(tries=2, delay=5)
-def _download_energy_month(tesla, site_id, timezone, start_date, end_date):
-    print(start_date.isoformat(), end_date.isoformat())
-    response = tesla.api(
-        'CALENDAR_HISTORY_DATA',
-        path_vars={'site_id': site_id},
-        kind='energy',
-        period='month',
-        start_date=start_date.isoformat(),
-        end_date=end_date.isoformat(),
-        time_zone=timezone,
-        fill_telemetry=0,
-    )['response']
-
-    return response['time_series']
-
-
-def _download_energy_data(tesla, site_id, debug=False):
-    site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
-    installation_date = parse(site_config['installation_date'])
-    timezone = site_config['installation_time_zone']
-
-    now = datetime.now(pytz.timezone(timezone)).replace(microsecond=0)
-    start_date = now.replace(hour=0, minute=0, second=0)
-    end_date = now.replace(hour=23, minute=59, second=59)
-
-    csv_name = _get_energy_csv_name(site_id)
-    if os.path.exists(csv_name):
-        os.remove(csv_name)
-    # Beginning of the month.
-    start_date = start_date - timedelta(days=start_date.day - 1)
-    if debug:
-        print(f'Timezone: {timezone}')
-        print(f'Start date: {start_date}')
-
-    timeseries = []
-    while end_date > installation_date:
-        timeseries.extend(
-            _download_energy_month(tesla, site_id, timezone, start_date, end_date)
-        )
-        time.sleep(1)
-        end_date = start_date - timedelta(seconds=1)
-        start_date = end_date.replace(hour=0, minute=0, second=0) - timedelta(
-            days=end_date.day - 1
-        )
-        start_date = pytz.timezone(timezone).localize(start_date.replace(tzinfo=None))
-
-    timeseries.sort(key=lambda x: x['timestamp'])
-    _write_energy_csv(timeseries, site_id)
-
-
-def _delete_partial_files(site_id):
-    dir = os.path.join('download', str(site_id))
+def _delete_partial_power_files(site_id):
+    dir = os.path.join('download', str(site_id), 'power')
     if not os.path.exists(dir):
         return
     for fname in os.listdir(dir):
@@ -213,10 +233,19 @@ def main():
         resource_type = product.get('resource_type')
         if resource_type in ('battery', 'solar'):
             site_id = product['energy_site_id']
-            print(f'Downloading data for {resource_type} site ***{str(site_id)[-4:]}')
-            _delete_partial_files(site_id)
-            _download_data(tesla, site_id, debug=args.debug)
+            obfuscated_site_it = f'***{str(site_id)[-4:]}'
+            print(
+                f'Downloading energy data for {resource_type} site {obfuscated_site_it} to download/energy/'
+            )
+            _delete_partial_energy_files(site_id)
             _download_energy_data(tesla, site_id, debug=args.debug)
+            print()
+
+            print(
+                f'Downloading power data for {resource_type} site {obfuscated_site_it} to download/power/'
+            )
+            _delete_partial_power_files(site_id)
+            _download_power_data(tesla, site_id, debug=args.debug)
 
 
 if __name__ == '__main__':
