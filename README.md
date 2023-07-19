@@ -48,17 +48,14 @@ Energy downloads are faster (less than 30s per year).
 ## Data
 
 Power data is formatted as follows:
-`download/<site_id>/power/2022-05-23.csv`
+`download/<site_id>/power/2022-07-19.csv`
 ```CSV
-timestamp,solar_power,battery_power,grid_power,grid_services_power,generator_power,load_power
-2023-05-23 00:00:00,0,0,569.7448979591836,0,0,569.7448979591836
-2023-05-23 00:05:00,0,0,494.8469387755102,0,0,494.8469387755102
+timestamp,solar_power,battery_power,grid_power,load_power
 [...]
-2023-05-23 10:25:00,7691.632653061224,0,-7238.224489795918,0,0,453.408163265306
-2023-05-23 10:30:00,7689.183673469388,0,-7211.2040816326535,0,0,477.979591836734
+2023-07-19 10:40:00,7506.428571428572,-7401.224489795918,612.5714285714286,717.775510204082
+2023-07-19 10:45:00,7576.836734693878,-3342.0408163265306,-3555.030612244898,679.7653061224487
+2023-07-19 10:50:00,7616.666666666667,-3466.6666666666665,-3544.4,605.5999999999999
 [...]
-2023-05-23 23:50:00,0,826.6666666666666,0,0,0,826.6666666666666
-2023-05-23 23:55:00,0,855.7142857142857,0,0,0,855.7142857142857
 ```
 
 - One CSV file per day.
@@ -68,11 +65,11 @@ timestamp,solar_power,battery_power,grid_power,grid_services_power,generator_pow
 - grid_services_power and generator_power will likely be 0 and can be ignored.
 
 Energy data:
-`download/<site_id>/energy/2023-06.csv`
+`download/<site_id>/energy/2022-07.csv`
 ```CSV
-timestamp,solar_energy_exported,generator_energy_exported,grid_energy_imported,grid_services_energy_imported,grid_services_energy_exported,grid_energy_exported_from_solar,grid_energy_exported_from_generator,grid_energy_exported_from_battery,battery_energy_exported,battery_energy_imported_from_grid,battery_energy_imported_from_solar,battery_energy_imported_from_generator,consumer_energy_imported_from_grid,consumer_energy_imported_from_solar,consumer_energy_imported_from_battery,consumer_energy_imported_from_generator
-2023-06-01 01:00:00,67490,0,23363,14.30859375,0,53503,0,0,8220,158,8742,0,23205,5245,8220,0
-2023-06-02 01:00:00,67450,0,6206.5,24.84765625,0,52814.5,0,0,8710,177,9443,0,6029.5,5192.5,8710,0
-2023-06-03 01:00:00,66170,0,6418.5,1.76953125,0,51329,0,0,8010,177.5,9932.5,0,6241,4908.5,8010,0
+timestamp,solar_energy_exported,grid_energy_imported,grid_energy_exported_from_solar,grid_energy_exported_from_battery,battery_energy_exported,battery_energy_imported_from_grid,battery_energy_imported_from_solar,consumer_energy_imported_from_grid,consumer_energy_imported_from_solar,consumer_energy_imported_from_battery
+2023-07-01 01:00:00,66700,6493.5,43456,0,16760,249.5,15640.5,6244,7603.5,16760
+2023-07-02 01:00:00,66780,6353,40874,0,14060,260,18510,6093,7396,14060
+2023-07-03 01:00:00,67380,6282,45964.5,0,10030,230,15580,6052,5835.5,10030
 [...]
 ```

@@ -25,6 +25,24 @@ import teslapy
 from dateutil.parser import parse
 from retry import retry
 
+# Exclude columns that are not relevant (and generally not set).
+EXCLUDED_COLUMNS = (
+    'grid_services_power',
+    'generator_power',
+    'generator_energy_exported',
+    'grid_services_energy_imported',
+    'grid_services_energy_exported',
+    'grid_energy_exported_from_generator',
+    'battery_energy_imported_from_generator',
+    'consumer_energy_imported_from_generator',
+)
+
+
+def _remove_excluded_columns(timeseries):
+    for col in EXCLUDED_COLUMNS:
+        if col in timeseries:
+            del timeseries[col]
+
 
 def _get_energy_csv_name(date, site_id, partial_month=False):
     str_date = date.strftime('%Y-%m')
@@ -39,11 +57,13 @@ def _write_energy_csv(timeseries, date, site_id, partial_month=False):
     csv_filename = _get_energy_csv_name(date, site_id, partial_month=partial_month)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
     fieldnames = list(timeseries[0].keys())
+    fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for ts in timeseries:
             ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+            _remove_excluded_columns(ts)
             writer.writerow(ts)
 
 
@@ -130,6 +150,7 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
     csv_filename = _get_power_csv_name(date, site_id, partial_day=partial_day)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
     fieldnames = list(timeseries[0].keys()) + ['load_power']
+    fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
@@ -141,6 +162,7 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
                 + ts['grid_power']
                 + ts['generator_power']
             )
+            _remove_excluded_columns(ts)
             writer.writerow(ts)
 
 
