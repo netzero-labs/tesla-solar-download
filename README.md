@@ -62,7 +62,6 @@ timestamp,solar_power,battery_power,grid_power,load_power
 - Every file starts at midnight and ends at 11.55pm, in 5 minute increments.
 - All power values are in Watts.
 - load_power is simply a sum of solar+battery+grid+generator power and is what is shown as "house" load in the Tesla app.  (Note: this value is not included in API responses since it can be easily derived.)
-- grid_services_power and generator_power will likely be 0 and can be ignored.
 
 Energy data:
 `download/<site_id>/energy/2022-07.csv`
