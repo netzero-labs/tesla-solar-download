@@ -18,6 +18,7 @@ import argparse
 import csv
 import os
 import time
+import traceback
 from datetime import datetime, timedelta
 
 import pytz
@@ -126,14 +127,17 @@ def _download_energy_data(tesla, site_id, debug=False):
             _get_energy_csv_name(start_date, site_id)
         ):
             print(f'  {os.path.basename(csv_name)}')
-            _download_energy_month(
-                tesla,
-                site_id,
-                timezone,
-                start_date,
-                end_date,
-                partial_month=partial_month,
-            )
+            try:
+                _download_energy_month(
+                    tesla,
+                    site_id,
+                    timezone,
+                    start_date,
+                    end_date,
+                    partial_month=partial_month,
+                )
+            except Exception:
+                traceback.print_exc()
             time.sleep(1)
         partial_month = False
         end_date = start_date - timedelta(seconds=1)
@@ -226,7 +230,10 @@ def _download_power_data(tesla, site_id, debug=False):
         csv_name = _get_power_csv_name(date, site_id)
         if partial_day or not os.path.exists(csv_name):
             print(f'  {os.path.basename(csv_name)}')
-            _download_power_day(tesla, site_id, timezone, date, partial_day=partial_day)
+            try:
+                _download_power_day(tesla, site_id, timezone, date, partial_day=partial_day)
+            except Exception:
+                traceback.print_exc()
             time.sleep(1)
         date -= timedelta(days=1)
         partial_day = False
@@ -274,15 +281,21 @@ def main():
             print(
                 f'Downloading energy data for {resource_type} site {obfuscated_site_it} to download/energy/'
             )
-            _delete_partial_energy_files(site_id)
-            _download_energy_data(tesla, site_id, debug=args.debug)
+            try:
+                _delete_partial_energy_files(site_id)
+                _download_energy_data(tesla, site_id, debug=args.debug)
+            except Exception:
+                traceback.print_exc()
             print()
 
             print(
                 f'Downloading power data for {resource_type} site {obfuscated_site_it} to download/power/'
             )
-            _delete_partial_power_files(site_id)
-            _download_power_data(tesla, site_id, debug=args.debug)
+            try:
+                _delete_partial_power_files(site_id)
+                _download_power_data(tesla, site_id, debug=args.debug)
+            except Exception:
+                traceback.print_exc()
 
 
 if __name__ == '__main__':
