@@ -87,10 +87,25 @@ def _download_energy_month(
     )
 
 
+def _get_timezone(site_config, installation_date):
+    if 'installation_time_zone' in site_config:
+        return site_config['installation_time_zone']
+    offset = installation_date.strftime('%z')
+    for tz in pytz.country_timezones('us'):
+        if datetime.now(pytz.timezone(tz)).strftime('%z') == offset:
+            return tz
+    for tz in pytz.common_timezones:
+        if datetime.now(pytz.timezone(tz)).strftime('%z') == offset:
+            return tz
+    for tz in pytz.all_timezones:
+        if datetime.now(pytz.timezone(tz)).strftime('%z') == offset:
+            return tz
+
+
 def _download_energy_data(tesla, site_id, debug=False):
     site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
     installation_date = parse(site_config['installation_date'])
-    timezone = site_config['installation_time_zone']
+    timezone = _get_timezone(site_config, installation_date)
 
     now = datetime.now(pytz.timezone(timezone)).replace(microsecond=0)
     start_date = now.replace(hour=0, minute=0, second=0)
@@ -195,7 +210,7 @@ def _download_power_day(tesla, site_id, timezone, date, partial_day=True):
 def _download_power_data(tesla, site_id, debug=False):
     site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
     installation_date = parse(site_config['installation_date'])
-    timezone = site_config['installation_time_zone']
+    timezone = _get_timezone(site_config, installation_date)
 
     date = datetime.now(pytz.timezone(timezone)).replace(
         hour=0, minute=0, second=0, microsecond=0
