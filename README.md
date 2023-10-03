@@ -22,13 +22,14 @@ download new data.
     ```bash
     python3 -m venv venv
     source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt
     ```
 
 ## Usage
 ```bash
-python ./tesla_solar_download.py --email <my_tesla_email@gmail.com>
+source venv/bin/activate
+python3 ./tesla_solar_download.py --email <my_tesla_email@gmail.com>
 ```
 
 Follow the instructions to log in to Tesla with your web browser (this is needed to generate an API
