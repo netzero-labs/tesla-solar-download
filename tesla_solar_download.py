@@ -301,6 +301,15 @@ def _delete_partial_power_files(site_id):
             os.remove(os.path.join(dir, fname))
 
 
+def _delete_partial_soe_files(site_id):
+    dir = os.path.join('download', str(site_id), 'soe')
+    if not os.path.exists(dir):
+        return
+    for fname in os.listdir(dir):
+        if '.partial.csv' in fname:
+            os.remove(os.path.join(dir, fname))
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Download Tesla Solar/Powerwall power data'
@@ -343,6 +352,7 @@ def main():
             )
             try:
                 _delete_partial_power_files(site_id)
+                _delete_partial_soe_files(site_id)
                 _download_power_data(tesla, site_id, debug=args.debug)
             except Exception:
                 traceback.print_exc()
