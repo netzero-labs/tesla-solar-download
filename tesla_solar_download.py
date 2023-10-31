@@ -162,6 +162,12 @@ def _get_power_csv_name(date, site_id, partial_day=False):
     return f'download/{site_id}/power/{str_date}{suffix}'
 
 
+def _get_soe_csv_name(date, site_id, partial_day=False):
+    str_date = date.strftime('%Y-%m-%d')
+    suffix = '.partial.csv' if partial_day else '.csv'
+    return f'download/{site_id}/soe/{str_date}{suffix}'
+
+
 def _write_power_csv(timeseries, date, site_id, partial_day=False):
     if not timeseries:
         raise ValueError(f'No timeseries for {date}')
@@ -181,6 +187,23 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
                 + ts['grid_power']
                 + ts['generator_power']
             )
+            _remove_excluded_columns(ts)
+            writer.writerow(ts)
+
+
+def _write_soe_csv(timeseries, date, site_id, partial_day=False):
+    if not timeseries:
+        raise ValueError(f'No timeseries for {date}')
+
+    csv_filename = _get_soe_csv_name(date, site_id, partial_day=partial_day)
+    os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
+    fieldnames = list(timeseries[0].keys())
+    fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
+    with open(csv_filename, 'w') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for ts in timeseries:
+            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
             _remove_excluded_columns(ts)
             writer.writerow(ts)
 
@@ -211,6 +234,32 @@ def _download_power_day(tesla, site_id, timezone, date, partial_day=True):
     _write_power_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
+@retry(tries=2, delay=5)
+def _download_soe_day(tesla, site_id, timezone, date, partial_day=True):
+    start_date = (
+        pytz.timezone(timezone)
+        .localize(date.replace(hour=0, minute=0, second=0, tzinfo=None))
+        .isoformat()
+    )
+    end_date = (
+        pytz.timezone(timezone)
+        .localize(date.replace(hour=23, minute=59, second=59, tzinfo=None))
+        .isoformat()
+    )
+    response = tesla.api(
+        'CALENDAR_HISTORY_DATA',
+        path_vars={'site_id': site_id},
+        kind='soe',
+        period='day',
+        start_date=start_date,
+        end_date=end_date,
+        time_zone=timezone,
+        fill_telemetry=0,
+    )['response']
+
+    _write_soe_csv(response['time_series'], date, site_id, partial_day=partial_day)
+
+
 def _download_power_data(tesla, site_id, debug=False):
     site_config = tesla.api('SITE_CONFIG', path_vars={'site_id': site_id})['response']
     installation_date = parse(site_config['installation_date'])
@@ -232,6 +281,7 @@ def _download_power_data(tesla, site_id, debug=False):
             print(f'  {os.path.basename(csv_name)}')
             try:
                 _download_power_day(tesla, site_id, timezone, date, partial_day=partial_day)
+                _download_soe_day(tesla, site_id, timezone, date, partial_day=partial_day)
             except Exception:
                 traceback.print_exc()
             time.sleep(1)
