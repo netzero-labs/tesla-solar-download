@@ -49,3 +49,6 @@ $CURL_CMD -H "Authorization: Bearer $TESLA_API_TOKEN" $TESLA_BASE_URL/api/1/ener
 
 # To set backup reserve to 50%:
 #$CURL_CMD -H "X-Tesla-User-Agent: TeslaApp/4.29.0" -H "Authorization: Bearer $TESLA_API_TOKEN" --json '{"backup_reserve_percent": 50}' $TESLA_BASE_URL/api/1/energy_sites/$TESLA_SITE_ID/backup
+
+# To change operation mode (autonomous/self_consumption):
+#$CURL_CMD -H "X-Tesla-User-Agent: TeslaApp/4.29.0" -H "Authorization: Bearer $TESLA_API_TOKEN" --json '{"default_real_mode": "autonomous"}' $TESLA_BASE_URL/api/1/energy_sites/$TESLA_SITE_ID/operation
