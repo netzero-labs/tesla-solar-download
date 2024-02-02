@@ -9,6 +9,9 @@ and [TeslaPy](https://github.com/tdorssers/TeslaPy) library.  Data is stored in 
 day for power, and one file per month for energy.  You can run the script repeatedly and it will only
 download new data.
 
+Note: if you're not comfortable running Python code and want better data exports from your Tesla solar/battery system,
+consider the [Netzero app](https://www.netzeroapp.io).
+
 ## Installation
 
 1. If needed, install Python 3 and git.
