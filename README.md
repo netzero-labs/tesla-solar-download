@@ -32,7 +32,7 @@ consider the [Netzero app](https://www.netzeroapp.io).
 ## Usage
 ```bash
 source venv/bin/activate
-python3 ./tesla_solar_download.py --email <my_tesla_email@gmail.com>
+python3 ./tesla_solar_download.py --email my_tesla_email@gmail.com
 ```
 
 Follow the instructions to log in to Tesla with your web browser (this is needed to generate an API

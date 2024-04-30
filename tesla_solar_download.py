@@ -60,7 +60,7 @@ def _write_energy_csv(timeseries, date, site_id, partial_month=False):
     fieldnames = list(timeseries[0].keys())
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
             ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
@@ -177,7 +177,7 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
     fieldnames = list(timeseries[0].keys()) + ['load_power']
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
             ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
@@ -200,7 +200,7 @@ def _write_soe_csv(timeseries, date, site_id, partial_day=False):
     fieldnames = list(timeseries[0].keys())
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
             ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
