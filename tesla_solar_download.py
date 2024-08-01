@@ -83,6 +83,8 @@ def _download_energy_month(
         fill_telemetry=0,
     )['response']
 
+    if not response or 'time_series' not in response:
+        raise ValueError(f'No timeseries for {start_date}')
     _write_energy_csv(
         response['time_series'], start_date, site_id, partial_month=partial_month
     )
@@ -231,6 +233,8 @@ def _download_power_day(tesla, site_id, timezone, date, partial_day=True):
         fill_telemetry=0,
     )['response']
 
+    if not response or 'time_series' not in response:
+        raise ValueError(f'No timeseries for {date}')
     _write_power_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
@@ -257,6 +261,8 @@ def _download_soe_day(tesla, site_id, timezone, date, partial_day=True):
         fill_telemetry=0,
     )['response']
 
+    if not response or 'time_series' not in response:
+        raise ValueError(f'No timeseries for {date}')
     _write_soe_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
