@@ -3,14 +3,16 @@
 ## Introduction
 
 This script will download your entire history of Tesla Solar power and energy data:
-solar/battery/grid power data in 5 minute intervals and daily totals for solar/home/battery/grid
-energy.  The script is using the [unofficial Tesla API](https://tesla-api.timdorr.com/)
+solar/battery/grid power data in 5 minute intervals, battery state of charge in 15 minute intervals,
+and daily totals for solar/home/battery/grid energy.
+
+The script is using the [unofficial Tesla API](https://tesla-api.timdorr.com/)
 and [TeslaPy](https://github.com/tdorssers/TeslaPy) library.  Data is stored in CSV files: one file per
 day for power, and one file per month for energy.  You can run the script repeatedly and it will only
 download new data.
 
 Note: if you're not comfortable running Python code and want better data exports from your Tesla solar/battery system,
-consider the [Netzero app](https://www.netzeroapp.io).
+consider the [Netzero app](https://www.netzero.energy).
 
 ## Installation
 
@@ -74,5 +76,15 @@ timestamp,solar_energy_exported,grid_energy_imported,grid_energy_exported_from_s
 2023-07-01 01:00:00,66700,6493.5,43456,0,16760,249.5,15640.5,6244,7603.5,16760
 2023-07-02 01:00:00,66780,6353,40874,0,14060,260,18510,6093,7396,14060
 2023-07-03 01:00:00,67380,6282,45964.5,0,10030,230,15580,6052,5835.5,10030
+[...]
+```
+
+Powerwall state of charge data:
+`download/<site_id>/soe/2022-07-19.csv`
+```CSV
+timestamp,soe
+2024-07-19 00:00:00,44
+2024-07-19 00:15:00,43
+2024-07-19 00:30:00,43
 [...]
 ```
