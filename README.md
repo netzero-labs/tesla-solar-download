@@ -1,4 +1,4 @@
-# Tesla Solar Data Downloader
+# Tesla Solar/Powerwall Data Downloader
 
 ## Introduction
 
