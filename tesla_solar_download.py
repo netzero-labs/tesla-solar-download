@@ -51,6 +51,11 @@ def _get_energy_csv_name(date, site_id, partial_month=False):
     return f'download/{site_id}/energy/{str_date}{suffix}'
 
 
+def _format_timestamp(ts):
+    s = ts.strftime('%Y-%m-%dT%H:%M:%S%z')
+    return f'{s[:-2]}:{s[-2:]}'
+
+
 def _write_energy_csv(timeseries, date, site_id, partial_month=False):
     if not timeseries:
         raise ValueError('No timeseries')
@@ -63,7 +68,7 @@ def _write_energy_csv(timeseries, date, site_id, partial_month=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
-            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+            ts['timestamp'] = _format_timestamp(parse(ts['timestamp']))
             _remove_excluded_columns(ts)
             writer.writerow(ts)
 
@@ -181,7 +186,7 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
-            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+            ts['timestamp'] = _format_timestamp(parse(ts['timestamp']))
             ts['load_power'] = (
                 ts['solar_power']
                 + ts['battery_power']
@@ -204,7 +209,7 @@ def _write_soe_csv(timeseries, date, site_id, partial_day=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         for ts in timeseries:
-            ts['timestamp'] = parse(ts['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+            ts['timestamp'] = _format_timestamp(parse(ts['timestamp']))
             _remove_excluded_columns(ts)
             writer.writerow(ts)
 
