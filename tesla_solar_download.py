@@ -80,7 +80,6 @@ def _download_energy_month(
         start_date=start_date.isoformat(),
         end_date=end_date.isoformat(),
         time_zone=timezone,
-        fill_telemetry=0,
     )['response']
 
     if not response or 'time_series' not in response:
@@ -230,7 +229,6 @@ def _download_power_day(tesla, site_id, timezone, date, partial_day=True):
         start_date=start_date,
         end_date=end_date,
         time_zone=timezone,
-        fill_telemetry=0,
     )['response']
 
     if not response or 'time_series' not in response:
@@ -258,12 +256,10 @@ def _download_soe_day(tesla, site_id, timezone, date, partial_day=True):
         start_date=start_date,
         end_date=end_date,
         time_zone=timezone,
-        fill_telemetry=0,
     )['response']
 
-    if not response or 'time_series' not in response:
-        raise ValueError(f'No timeseries for {date}')
-    _write_soe_csv(response['time_series'], date, site_id, partial_day=partial_day)
+    if response and 'time_series' in response:
+        _write_soe_csv(response['time_series'], date, site_id, partial_day=partial_day)
 
 
 def _download_power_data(tesla, site_id, debug=False):
