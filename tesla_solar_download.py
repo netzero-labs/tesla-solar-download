@@ -51,13 +51,21 @@ def _get_energy_csv_name(date, site_id, partial_month=False):
     return f'download/{site_id}/energy/{str_date}{suffix}'
 
 
+def _get_fieldnames_from_series(timeseries):
+    keys = dict()
+    for series in timeseries:
+        for k in series.keys():
+            keys[k] = True
+    return list(keys.keys())
+
+
 def _write_energy_csv(timeseries, date, site_id, partial_month=False):
     if not timeseries:
         raise ValueError('No timeseries')
 
     csv_filename = _get_energy_csv_name(date, site_id, partial_month=partial_month)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
-    fieldnames = list(timeseries[0].keys())
+    fieldnames = _get_fieldnames_from_series(timeseries)
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
@@ -175,7 +183,7 @@ def _write_power_csv(timeseries, date, site_id, partial_day=False):
 
     csv_filename = _get_power_csv_name(date, site_id, partial_day=partial_day)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
-    fieldnames = list(timeseries[0].keys()) + ['load_power']
+    fieldnames = _get_fieldnames_from_series(timeseries) + ['load_power']
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
@@ -198,7 +206,7 @@ def _write_soe_csv(timeseries, date, site_id, partial_day=False):
 
     csv_filename = _get_soe_csv_name(date, site_id, partial_day=partial_day)
     os.makedirs(os.path.dirname(csv_filename), exist_ok=True)
-    fieldnames = list(timeseries[0].keys())
+    fieldnames = _get_fieldnames_from_series(timeseries)
     fieldnames = [n for n in fieldnames if n not in EXCLUDED_COLUMNS]
     with open(csv_filename, 'w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction='ignore')
