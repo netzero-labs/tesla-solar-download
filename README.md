@@ -19,7 +19,7 @@ consider the [Netzero app](https://www.netzero.energy).
 1. If needed, install Python 3 and git.
 2. Clone the repo:
     ```bash
-    git clone https://github.com/zigam/tesla-solar-download.git
+    git clone https://github.com/netzero-labs/tesla-solar-download.git
     cd tesla-solar-download
     ```
 
