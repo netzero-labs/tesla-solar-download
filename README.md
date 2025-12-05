@@ -66,7 +66,7 @@ timestamp,solar_power,battery_power,grid_power,load_power
 
 - One CSV file per day.
 - Every file starts at midnight and ends at 11.55pm, in 5 minute increments.
-- All power values are in Watts.
+- All power values are in Watts. Note: to get Watt-hour energy values for the 5-minute interval, divide the value by 12. You can then add up all the values and divide by 1000 for the daily kWh total.
 - load_power is simply a sum of solar+battery+grid+generator power and is what is shown as "house" load in the Tesla app.  (Note: this value is not included in API responses since it can be easily derived.)
 
 Energy data:
