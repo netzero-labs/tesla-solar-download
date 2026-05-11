@@ -12,6 +12,6 @@ requests-oauthlib==2.0.0
 retry==0.9.2
 six==1.17.0
 TeslaPy==2.9.1
-urllib3==2.6.3
+urllib3==2.7.0
 websocket-client==1.9.0
 wheel==0.46.3
