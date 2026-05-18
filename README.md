@@ -31,11 +31,15 @@ consider the [Netzero app](https://www.netzero.energy).
     pip3 install -r requirements.txt
     ```
 
+Note: On Windows, run `venv\Scripts\activate` instead of `source venv/bin/activate`.
+
 ## Usage
 ```bash
 source venv/bin/activate
 python3 ./tesla_solar_download.py --email my_tesla_email@gmail.com
 ```
+
+Note: On Windows, run `venv\Scripts\activate` instead of `source venv/bin/activate`.
 
 Follow the instructions to log in to Tesla with your web browser (this is needed to generate an API
 token, the credentials are only sent to Tesla).  Once you've logged in, the token will be stored
