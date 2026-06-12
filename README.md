@@ -2,7 +2,7 @@
 
 ## Deprecation Notice
 
-**Tesla disabled Owner API access aound 6/12/2026, so this project is no longer functional. We will archive it on Jul 1, 2026. As an alternative, use the [Netzero app](https://www.netzero.energy) app to download data.**
+**Tesla disabled Owner API access around Jun 12, 2026, so this project is no longer functional. We will archive it on Aug 1, 2026. As an alternative, use the [Netzero app](https://www.netzero.energy) app to download data.**
 
 ## Introduction
 
