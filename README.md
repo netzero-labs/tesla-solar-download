@@ -1,4 +1,8 @@
-# Tesla Solar/Powerwall Data Downloader
+# [DEPRECATED] Tesla Solar/Powerwall Data Downloader
+
+## Deprecation Notice
+
+**Tesla disabled Owner API access aound 6/12/2026, so this project is no longer functional. We will archive it on 8/1/2026. As an alternative, use the [Netzero app](https://www.netzero.energy) app to download data.**
 
 ## Introduction
 
